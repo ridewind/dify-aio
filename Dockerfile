@@ -204,7 +204,7 @@ RUN apt-get clean && \
 
 # 可能的挂载点
 #   - ./volumes/app:/app/api/storage
-#   - ./volumes/plugin:/app/plugin-daemon/storage
+#   - ./volumes/plugin:/app/storage
 #   - ./volumes/db:/var/lib/postgresql/data
 #   - ./volumes/redis:/data
 #   - ./volumes/weaviate:/var/lib/weaviate
