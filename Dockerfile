@@ -214,5 +214,8 @@ RUN sed -i 's|dify_config\.SERVICE_API_URL or request\.host_url\.rstrip("/")|dif
 #   - ./volumes/weaviate:/var/lib/weaviate
 #   - ./ssl:/etc/ssl
 
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=60s \
+    CMD supervisorctl -c /etc/supervisor/conf.d/supervisord.conf status | grep -vq "RUNNING" && exit 1 || exit 0
+
 # 设置容器入口点
 CMD ["/app/entrypoint.sh"]
