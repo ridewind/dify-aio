@@ -1,6 +1,6 @@
-FROM langgenius/dify-api:1.3.1 AS api
-FROM langgenius/dify-web:1.3.1 AS web
-FROM langgenius/dify-plugin-daemon:0.0.9-local AS plugin-daemon
+FROM langgenius/dify-api:1.4.0 AS api
+FROM langgenius/dify-web:1.4.0 AS web
+FROM langgenius/dify-plugin-daemon:0.1.0-local AS plugin-daemon
 FROM semitechnologies/weaviate:1.19.0 AS weaviate
 
 FROM ubuntu:24.04
@@ -202,12 +202,17 @@ RUN chmod +x /app/entrypoint.sh
 RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# fix 微调api项目源码，避免前端访问dify的工作流时，“运行”按钮获取的baseUrl错误
+RUN sed -i 's|dify_config\.SERVICE_API_URL or request\.host_url\.rstrip("/")|dify_config.SERVICE_API_URL or ( (request.referrer.split("://")[0] + "://" + request.referrer.split("://")[1].split("/")[0]) if (request.referrer and "://" in request.referrer) else request.host_url.rstrip("/") )|g' /app/api/models/model.py \
+    && sed -i 's|dify_config\.APP_WEB_URL or request\.url_root\.rstrip("/")|dify_config.APP_WEB_URL or ( (request.referrer.split("://")[0] + "://" + request.referrer.split("://")[1].split("/")[0]) if (request.referrer and "://" in request.referrer) else request.url_root.rstrip("/") )|g' /app/api/models/model.py
+
 # 可能的挂载点
 #   - ./volumes/app:/app/api/storage
 #   - ./volumes/plugin:/app/storage
 #   - ./volumes/db:/var/lib/postgresql/data
 #   - ./volumes/redis:/data
 #   - ./volumes/weaviate:/var/lib/weaviate
+#   - ./ssl:/etc/ssl
 
 # 设置容器入口点
 CMD ["/app/entrypoint.sh"]
