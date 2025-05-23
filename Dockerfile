@@ -194,6 +194,11 @@ RUN pip install git+https://github.com/Supervisor/supervisor.git --break-system-
     pip install git+https://github.com/whereisaaron/supervisor-stdout.git --break-system-packages
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
+RUN apt-get install -y openssh-client openssh-server && \
+    mkdir -p /var/run/sshd && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
 COPY entrypoint.sh /app/entrypoint.sh
 COPY .env /app/.env
 RUN chmod +x /app/entrypoint.sh
