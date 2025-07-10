@@ -1,6 +1,20 @@
-FROM langgenius/dify-api:1.4.1 AS api
-FROM langgenius/dify-web:1.4.1 AS web
-FROM langgenius/dify-plugin-daemon:0.1.1-local AS plugin-daemon
+FROM ubuntu:24.04 AS sandbox-build
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        git wget pkg-config gcc libseccomp-dev
+
+WORKDIR /build
+RUN wget https://go.dev/dl/go1.23.3.linux-amd64.tar.gz && tar -C /usr/local -xzf go1.23.3.linux-amd64.tar.gz
+ENV PATH="/usr/local/go/bin:${PATH}" 
+RUN git clone --branch 0.2.12 https://github.com/langgenius/dify-sandbox
+WORKDIR /build/dify-sandbox
+# 构建 amd64 版本
+RUN ./build/build_amd64.sh
+
+FROM langgenius/dify-api:1.5.1 AS api
+FROM langgenius/dify-web:1.5.1 AS web
+FROM langgenius/dify-plugin-daemon:0.1.2-local AS plugin-daemon
 FROM semitechnologies/weaviate:1.19.0 AS weaviate
 
 FROM ubuntu:24.04
@@ -68,12 +82,10 @@ RUN chmod +x /app/api/entrypoint.sh
 
 # sandbox部分
 WORKDIR /app/sandbox
-COPY ./sandbox/main ./main
-COPY ./sandbox/env ./env
+COPY --from=sandbox-build --chmod=+x /build/dify-sandbox/main /build/dify-sandbox/env ./
 COPY ./sandbox/config.yaml ./conf/config.yaml
 COPY ./sandbox/python-requirements.txt ./dependencies/python-requirements.txt
-RUN chmod +x ./main ./env && \
-    pip3 install --break-system-packages --no-cache-dir \
+RUN pip3 install --break-system-packages --no-cache-dir \
         httpx==0.27.2 \
         requests==2.32.3 \
         jinja2==3.0.3 \
